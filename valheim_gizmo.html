@@ -13,7 +13,7 @@
             flex-direction: column;
             align-items: center;
             padding: 20px;
-            display: flex; /* Це зберігаємо для центрування всього вмісту */
+            display: flex;
             flex-direction: column;
             align-items: center;
         }
@@ -40,13 +40,13 @@
             border-radius: 8px;
             background-color: #444;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            margin-bottom: 20px; /* Додайте відступ для розділення */
+            margin-bottom: 20px;
         }
         .content {
             display: flex;
             justify-content: center;
-            gap: 20px; /* Відступ між елементами */
-            flex-wrap: wrap; /* Для адаптивності на менших екранах */
+            gap: 20px;
+            flex-wrap: wrap;
         }
         canvas {
             background-color: #222;
@@ -81,7 +81,7 @@
     <h1>Arch Calculator (ComfyGizmo)</h1>
 
     <div class="controls">
-        <label>Beam lenght (m):</label><input type="number" id="beamLength" value="2.0" step="1" min="0.1" max="999">
+        <label>Beam Length (m):</label><input type="number" id="beamLength" value="2.0" step="1" min="0" max="999">
         <label>Gizmo-parameter (2-250):</label><input type="number" id="gizmoParam" value="8" min="2" max="250">
         <label>Number of beams (1-N):</label> <input type="number" id="beamsCount" value="8" min="1">
     </div>
@@ -115,138 +115,138 @@
     const arcHeightSpan = document.getElementById('arcHeight');
 
     function drawPolygonPart() {
-        // Очищаємо полотно
+        // clean canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Отримуємо значення з полів вводу
+        // Getting values from input fields
         const beamLength = parseFloat(beamLengthInput.value);
         const gizmoParam = parseInt(gizmoParamInput.value);
         const beamsCount = parseInt(beamsCountInput.value);
 
-        if (isNaN(beamLength) || isNaN(gizmoParam) || isNaN(beamsCount) || gizmoParam < 2 || gizmoParam > 250 || beamsCount < 1 || beamsCount > gizmoParam * 2 ) {
-            // Виводимо повідомлення про помилку, якщо дані некоректні
-            rotationStepSpan.textContent = "Некоректні дані";
-            polygonSidesSpan.textContent = "Некоректні дані";
-            diameterSpan.textContent = "Некоректні дані";
-            chordLengthSpan.textContent = "Некоректні дані";
-            arcHeightSpan.textContent = "Некоректні дані";
+        if (isNaN(beamLength) || isNaN(gizmoParam) || isNaN(beamsCount) || gizmoParam < 2 || gizmoParam > 250 || beamsCount < 1 || beamsCount > gizmoParam * 2 || beamLength < 0.1 ) {
+            // We display an error message if the data is incorrect
+            rotationStepSpan.textContent = "incorrect input";
+            polygonSidesSpan.textContent = "incorrect input";
+            diameterSpan.textContent = "incorrect input";
+            chordLengthSpan.textContent = "incorrect input";
+            startAngle1Span.textContent = "incorrect input";
+            startAngle2Span.textContent = "incorrect input";
+            arcHeightSpan.textContent = "incorrect input";
             return;
         }
 
-        // --- Розрахунки ---
+        // --- calc ---
         const rotationStepDegrees = 180.0 / gizmoParam;
         const polygonSidesCount = 360.0 / rotationStepDegrees;
-        const angleRad = Math.PI / polygonSidesCount; // Кут, що спирається на одну сторону в центрі кола
-        const radius = beamLength / (2 * Math.sin(angleRad)); // Радіус описаного кола
+        const angleRad = Math.PI / polygonSidesCount; // An angle that rests on one side at the center of a circle
+        const radius = beamLength / (2 * Math.sin(angleRad)); // Radius of the circumscribed circle
         const diameter = radius * 2;
-        const centralAngleRad = beamsCount * (2 * angleRad); // Загальний кут, що охоплює всі балки
+        const centralAngleRad = beamsCount * (2 * angleRad); // The total angle(radians) covering all beams
         const chordLength = 2 * radius * Math.sin(centralAngleRad / 2);
         
-        // Висота арки (стріла сегмента)
+        // Arch height (segment boom)
         const arcHeight = radius - radius * Math.cos(centralAngleRad / 2);
 
-        // Обмежуємо кількість балок до загальної кількості сторін багатокутника
+        // Limit the number of beams to the total number of sides of the polygon
         beamsCountInput.max = polygonSidesCount;
         if (beamsCount > polygonSidesCount) {
              beamsCountInput.value = Math.floor(polygonSidesCount); // Округляємо до цілого, щоб уникнути нескінченного циклу
         }
 
-        // --- Візуалізація ---
-        // Визначаємо масштаб, щоб малюнок помістився на канвасі
-        // Враховуємо висоту арки і простір для тексту під хордою
-        const textMarginBelowChord = 1.0; // Додатковий відступ для тексту під хордою в "метрах"
+        // --- Visualization ---
+        // We determine the scale so that the drawing fits on the canvas
+        // We take into account the height of the arch and the space for text under the chord
+        const textMarginBelowChord = 1.0; // Additional indentation for text under a chord in "meters"
         const totalDrawingHeightInUnits = arcHeight + textMarginBelowChord;
         console.log("totalDrawingHeightInUnits=",totalDrawingHeightInUnits)
 
-        const paddingFactor = 1.2; // Додаємо 20% відступу
+        const paddingFactor = 1.2; // add 20% paddign
         const scaleX = canvas.width / (chordLength * paddingFactor);
         const scaleY = canvas.height / (totalDrawingHeightInUnits * paddingFactor);
-        const scale = Math.min(scaleX, scaleY, 100); // Обмежуємо максимальний масштаб
+        const scale = Math.min(scaleX, scaleY, 100); 
 
-        // Переміщуємо початок координат канвасу
-        // X: Центр канвасу
-        // Y: Зміщуємо вниз, щоб арка і текст помістились.
-        // Точка (0,0) в нашій масштабованій системі буде серединою хорди.
-        // Робимо так, щоб середина хорди була приблизно на 70% висоти канвасу,
-        // це залишить місце для арки вгорі та тексту внизу.
+        // Move the canvas origin
+        // X: Center of the canvas
+        // Y: Move down so that the arch and text fit.
+        // The point (0,0) in our scaled system will be the middle of the chord.
+        // We make the middle of the chord about 70% of the height of the canvas,
+        // this will leave room for the arch at the top and the text at the bottom.
         const translateY = canvas.height * 0.7; 
         ctx.save();
         ctx.translate(canvas.width / 2, translateY);
 
-        // Масштабуємо малюнок
+        // Scaling the drawing
         ctx.scale(scale, scale);
 
-        // Початковий кут для першої балки (ліва крайня точка арки)
-        // Робимо арку симетричною відносно вертикальної осі (кут PI/2)
+        // Starting angle for the first beam (leftmost point of the arch)
+        // Make the arch symmetrical about the vertical axis (angle PI/2)
         const startAngle = Math.PI / 2 + centralAngleRad / 2;
         let currentAngle = startAngle;
         
         //let startAngleDegrees = 90-(beamsCount)*(180/(gizmoParam))-(180/(gizmoParam))/2 ;
         const startAngleDegrees = 90-180*(((beamsCount-1) * (2 * angleRad)) / 2)/Math.PI;
         
-        // Обчислюємо першу точку (початок арки) відносно центру кола, потім зміщуємо до хорди
-        // (0,0) в масштабованій системі - це середина хорди.
-        // Центр кола, з якого будується арка, знаходиться на осі Y, на відстані 'radius' від вершини арки.
-        // Його Y-координата відносно хорди буде -arcHeight + radius = radius * cos(centralAngleRad / 2)
-        const circleCenterX = 0; // Центр кола знаходиться на осі Y
-        //const circleCenterY = 10 + (-arcHeight + radius);
+        // Calculate the first point (the beginning of the arch) relative to the center of the circle, then shift to the chord
+        // (0,0) in the scaled system is the middle of the chord.
+        // The center of the circle from which the arch is built is on the Y axis, at a distance 'radius' from the top of the arch.
+        // Its Y-coordinate relative to the chord will be -arcHeight + radius = radius * cos(centralAngleRad / 2)
+        const circleCenterX = 0; 
         const circleCenterY = +arcHeight - radius; 
 
-        // Початкова точка арки
         let x_start_arc = radius * Math.cos(currentAngle) + circleCenterX;
         let y_start_arc = radius * Math.sin(currentAngle) + circleCenterY;
 
-        ctx.strokeStyle = '#a4b2c1'; // Колір арки
-        ctx.lineWidth = 0.1; // Товщина ліній арки
+        ctx.strokeStyle = '#a4b2c1'; // arch
+        ctx.lineWidth = 0.2; // arch
 
         ctx.beginPath();
-        ctx.moveTo(x_start_arc, -y_start_arc); // Застосовуємо інверсію Y для канвасу
+        ctx.moveTo(x_start_arc, -y_start_arc);
         let middle_arch_y = 0;
-        // Малюємо балки
+
+        // Drawing beams
         for (let i = 0; i < beamsCount; i++) {
-            currentAngle -= (2 * angleRad); // Переходимо до наступної точки
+            currentAngle -= (2 * angleRad); 
             const x_next_arc = radius * Math.cos(currentAngle) + circleCenterX;
             const y_next_arc = radius * Math.sin(currentAngle) + circleCenterY;
             if (i === Math.floor(beamsCount / 2)-1) {
                 middle_arch_y = y_next_arc; 
             };
             console.log(`x:${x_next_arc}, y:${y_next_arc}`)
-            ctx.lineTo(x_next_arc, -y_next_arc); // Застосовуємо інверсію Y
+            ctx.lineTo(x_next_arc, -y_next_arc); 
         }
         ctx.stroke();
 
-        // Обчислюємо останню точку (кінець арки) для малювання хорди
         const x_end_arc = radius * Math.cos(currentAngle) + circleCenterX;
         const y_end_arc = radius * Math.sin(currentAngle) + circleCenterY;
 
-        // Малюємо хорду
+        // chord
+        ctx.lineWidth = 0.05
         ctx.beginPath();
+        
         ctx.moveTo(x_start_arc, -y_start_arc);
         ctx.lineTo(x_end_arc, -y_end_arc);
-        ctx.strokeStyle = '#d4a76c'; // Колір хорди
-        ctx.setLineDash([0.3, 0.3]); // Пунктирна лінія
+        ctx.strokeStyle = '#d4a76c';
+        ctx.setLineDash([1, 1]); // dash
         ctx.stroke();
-        ctx.setLineDash([]); // Скидаємо стиль лінії
+        ctx.setLineDash([]); // reset line style
 
-        // Малюємо лінію висоти арки
+        // arch height
+        ctx.lineWidth = 0.05
         ctx.beginPath();
-        ctx.moveTo(0, -(y_start_arc+y_end_arc)/ 2); // Середина хорди
-        ctx.lineTo(0, -middle_arch_y); // Вершина арки
-        ctx.strokeStyle = '#6c96d4'; // Колір лінії висоти
+        ctx.moveTo(0, -(y_start_arc+y_end_arc)/ 2); // center of choird
+        ctx.lineTo(0, -middle_arch_y); 
+        ctx.strokeStyle = '#6c96d4'; 
+        ctx.setLineDash([1, 1]); // dash
         ctx.stroke();
 
-        // --- Текстові підписи на канвасі ---
+        // --- text signs  ---
         ctx.fillStyle = '#fff';
-        // Розмір шрифту залежить від довжини балки
         ctx.font = `${0.275 * beamLength}px Arial`; 
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        // Підпис довжини хорди
-        
-        //ctx.fillText(chordLength.toFixed(2) + ' м', 0, textMarginBelowChord); // Розміщуємо під хордою
-        ctx.fillText(chordLength.toFixed(2) + ' м ', 0, -(y_start_arc) + beamLength * 0.275 ); // Розміщуємо під хордою
-        // Підпис висоти арки
+       
+        ctx.fillText(chordLength.toFixed(2) + ' м ', 0, -(y_start_arc) + beamLength * 0.275 );
         ctx.save();
 
         let height_arch_text_y = -((y_start_arc+y_end_arc)/2 + middle_arch_y)/2
@@ -255,11 +255,10 @@
         ctx.fillText(arcHeight.toFixed(2) + ' м', 0, 0);
         ctx.restore();
 
-        ctx.restore(); // Відновлюємо початковий стан канвасу
+        ctx.restore(); 
 
-        // --- Оновлення текстової інформації в HTML ---
+        // --- Updating text information in HTML ---
         rotationStepSpan.textContent = rotationStepDegrees.toFixed(2);
-        //startAngle1Span.textContent = ((180*startAngle/Math.PI)-90).toFixed(2);
         startAngle1Span.textContent = (startAngleDegrees).toFixed(2);
         startAngle2Span.textContent = (90-startAngleDegrees).toFixed(2);
         polygonSidesSpan.textContent = Math.round(polygonSidesCount);
@@ -269,12 +268,12 @@
         
     }
 
-    // Запускаємо функцію при завантаженні сторінки та при зміні значень
+    // We run the function when the page loads and when the values change
     beamLengthInput.addEventListener('input', drawPolygonPart);
     gizmoParamInput.addEventListener('input', drawPolygonPart);
     beamsCountInput.addEventListener('input', drawPolygonPart);
     
-    // Перший запуск при завантаженні сторінки
+    // First launch on page load
     drawPolygonPart();
 </script>
 
